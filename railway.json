@@ -6,6 +6,7 @@
   "deploy": {
     "startCommand": "python -u donchian-paper.py",
     "numReplicas": 1,
-    "restartPolicyType": "NEVER"
+    "restartPolicyType": "ON_FAILURE",
+    "restartPolicyMaxRetries": 10
   }
 }

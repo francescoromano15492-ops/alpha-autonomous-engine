@@ -190,6 +190,10 @@ def main():
         return
     if STATE.exists():
         data = json.loads(STATE.read_text())
+        for acc in data['accounts']:
+            print(f"Stato recuperato da {STATE} | {acc['mode']} | saldo {acc['equity']:.4f} | "
+                  f"posizione {acc['position']['symbol'] if acc['position'] else None} | "
+                  f"ordine pendente {acc['pending']['symbol'] if acc['pending'] else None}", flush=True)
     else:
         data = {'hour': None, 'accounts': [
             {'mode': mode, 'equity': 300., 'position': None, 'pending': None, 'log': []}
@@ -199,6 +203,7 @@ def main():
     print('Storico diagnosi: '+str(DIAGNOSTICS.resolve()), flush=True)
     first_diagnostic=True
     last_heartbeat=0
+    saved_hour=None
     with ThreadPoolExecutor(max_workers=2) as pool:
         while True:
             try:
@@ -223,6 +228,9 @@ def main():
                 temp = STATE.with_suffix('.tmp')
                 temp.write_text(json.dumps(data, indent=2))
                 temp.replace(STATE)
+                if saved_hour != hour:
+                    saved_hour = hour
+                    print(f'Salvato {STATE} ({STATE.stat().st_size} byte) e {DIAGNOSTICS} ({DIAGNOSTICS.stat().st_size} byte)', flush=True)
                 if time.time()-last_heartbeat>=300:
                     print('Connessione OK | '+datetime.now(timezone.utc).strftime('%H:%M:%S UTC')+
                           ' | market '+str(round(data['accounts'][0]['equity'],2))+
@@ -230,7 +238,8 @@ def main():
                     last_heartbeat=time.time()
             except HTTPError as exc:
                 if exc.code == 451:
-                    raise SystemExit('Binance risponde HTTP 451 (area geografica bloccata). Sospendo i tentativi.')
+                    print('Binance risponde HTTP 451 (area geografica bloccata). Sospendo i tentativi.', flush=True)
+                    raise SystemExit(0)  # uscita pulita: la policy ON_FAILURE non riavvia
                 print(f'Feed o salvataggio: {exc}. Riprovo fra 15 secondi.', flush=True)
             except (OSError, ValueError, KeyError) as exc:
                 print(f'Feed o salvataggio: {exc}. Riprovo fra 15 secondi.', flush=True)
