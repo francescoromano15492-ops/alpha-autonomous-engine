@@ -194,6 +194,11 @@ def main():
         report(DIAGNOSTICS, lambda line: print(line, flush=True))
     except Exception as exc:
         print(f'Analisi ADX non eseguita: {type(exc).__name__}: {exc}', flush=True)
+    try:  # sola lettura, solo dati futures; se non disponibili stampa NON VERIFICATA
+        from ricostruzione_futures import report as reconstruct
+        reconstruct(DIAGNOSTICS, lambda line: print(line, flush=True))
+    except Exception as exc:
+        print(f'Ricostruzione futures non eseguita: {type(exc).__name__}: {exc}', flush=True)
     if args.analisi:
         return
     if STATE.exists():
