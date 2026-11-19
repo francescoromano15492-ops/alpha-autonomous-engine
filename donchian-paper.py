@@ -180,6 +180,30 @@ def update(state, book, now, hour, selected):
            commissione=fee, esecuzione='maker simulato' if fee==MAKER else 'taker simulato')
 
 
+def start_study():
+    """Studio in sola lettura in un thread separato, una sola volta (marker su /data). Non tocca lo stato."""
+    marker = DATA / 'backtest-v1.done'
+    if marker.exists():
+        print('BT | studio gia completato (marker presente), non rieseguito', flush=True)
+        return
+    def work():
+        try:
+            from backtest_futures import run
+            for attempt in range(3):
+                try:
+                    run(SYMBOLS, lambda line: print(line, flush=True))
+                    marker.write_text(datetime.now(timezone.utc).isoformat())
+                    return
+                except Exception as exc:
+                    print(f'BT | tentativo {attempt+1} fallito: {type(exc).__name__}: {exc}', flush=True)
+                    time.sleep(60)
+            print('BT | STUDIO NON VERIFICATO: dati futures non recuperati o errore, nessuna fonte alternativa', flush=True)
+        except Exception as exc:
+            print(f'BT | studio non eseguito: {type(exc).__name__}: {exc}', flush=True)
+    import threading
+    threading.Thread(target=work, name='studio', daemon=True).start()
+
+
 def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
@@ -199,8 +223,14 @@ def main():
         reconstruct(DIAGNOSTICS, lambda line: print(line, flush=True))
     except Exception as exc:
         print(f'Ricostruzione futures non eseguita: {type(exc).__name__}: {exc}', flush=True)
+    try:
+        from backtest_futures import diag_blockers
+        diag_blockers(DIAGNOSTICS, print)
+    except Exception as exc:
+        print(f'BT | conta filtri non eseguita: {type(exc).__name__}: {exc}', flush=True)
     if args.analisi:
         return
+    start_study()
     if STATE.exists():
         data = json.loads(STATE.read_text())
         for acc in data['accounts']:
