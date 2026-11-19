@@ -10,6 +10,7 @@ from collections import defaultdict
 from concurrent.futures import ThreadPoolExecutor
 from datetime import datetime, timezone
 from pathlib import Path
+from urllib.error import HTTPError
 from urllib.parse import urlencode
 from urllib.request import urlopen
 import json
@@ -227,6 +228,10 @@ def main():
                           ' | market '+str(round(data['accounts'][0]['equity'],2))+
                           ' | limit '+str(round(data['accounts'][1]['equity'],2)),flush=True)
                     last_heartbeat=time.time()
+            except HTTPError as exc:
+                if exc.code == 451:
+                    raise SystemExit('Binance risponde HTTP 451 (area geografica bloccata). Sospendo i tentativi.')
+                print(f'Feed o salvataggio: {exc}. Riprovo fra 15 secondi.', flush=True)
             except (OSError, ValueError, KeyError) as exc:
                 print(f'Feed o salvataggio: {exc}. Riprovo fra 15 secondi.', flush=True)
             time.sleep(15)
