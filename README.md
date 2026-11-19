@@ -52,3 +52,6 @@ This service is the execution/paper layer; the research app and this service sho
 ## Important
 This is a research/paper environment. Historical or simulated profitability does not establish
 future profitability. The v1.0 rules should be frozen while forward evidence is collected.
+
+# Branch donchian-paper
+Paper-only Donchian 1H simulator (`donchian-paper.py`, stdlib only). State and diagnostics are written to `/data`. Run with a single replica and no HTTP healthcheck.
