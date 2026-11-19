@@ -183,10 +183,18 @@ def update(state, book, now, hour, selected):
 def main():
     parser = ArgumentParser(description=__doc__)
     parser.add_argument('--check', action='store_true')
+    parser.add_argument('--analisi', action='store_true', help='solo analisi soglie ADX, poi esce')
     args = parser.parse_args()
     if args.check:
         bid, ask = quotes()['BTCUSDT']
         print(f'Quotazioni ricevute per {len(SYMBOLS)} coppie. BTCUSDT bid={bid} ask={ask}')
+        return
+    try:  # sola lettura: un errore qui non deve mai fermare il simulatore
+        from diagnosi_adx import report
+        report(DIAGNOSTICS, lambda line: print(line, flush=True))
+    except Exception as exc:
+        print(f'Analisi ADX non eseguita: {type(exc).__name__}: {exc}', flush=True)
+    if args.analisi:
         return
     if STATE.exists():
         data = json.loads(STATE.read_text())
